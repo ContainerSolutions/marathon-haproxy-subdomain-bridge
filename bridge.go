@@ -107,7 +107,7 @@ func main() {
     }
 
     client := http.Client{}
-    client.Timeout = time.Duration(10 * time.Second)
+    client.Timeout = time.Duration(60 * time.Second)
 
     req, err := http.NewRequest("GET", "http://" + hostport + "/v2/tasks", nil)
     checkerr(err)
@@ -133,7 +133,7 @@ func main() {
         if acl.Port == "80" {
             printBackend(fields[2:], acl)
         } else {
-            printListen(acl)
+            printListen(fields[2:], acl)
         }
 
         fmt.Println()
@@ -155,19 +155,25 @@ func printFrontend(acls []Acl) {
     fmt.Printf(frontendEnd + "\n", defaultBackend)
 }
 
-func printListen(acl Acl) {
+func printListen(servers []string, acl Acl) {
     fmt.Printf(listen + "\n", acl.App, acl.Port, acl.Port)
+
+	printServers(servers, acl)
 }
 
 func printBackend(servers []string, acl Acl) {
     strippedapp := strings.Replace(acl.App, "lauras-", "", -1)
     fmt.Printf(backend + "\n", strippedapp)
 
-    for index, servername := range servers {
-        if servername != "" {
-            fmt.Printf(server + "\n", acl.App, index + 1, servername)
-        }
-    }
+	printServers(servers, acl)
+}
+
+func printServers(servers []string, acl Acl) {
+	for index, servername := range servers {
+		if servername != "" {
+			fmt.Printf(server + "\n", acl.App, index + 1, servername)
+		}
+	}
 }
 
 func checkerr(err error) {
