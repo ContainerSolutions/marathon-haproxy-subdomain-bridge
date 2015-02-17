@@ -1,7 +1,6 @@
 #!/bin/bash
   if ! diff -q /tmp/haproxy.cfg /etc/haproxy/haproxy.cfg >&2
   then
-    #msg "Found changes. Sending reload request to HAProxy..."
     cat /tmp/haproxy.cfg > /etc/haproxy/haproxy.cfg
     if [[ -f /etc/init/haproxy.conf ]]
     then reload haproxy ## In case it switches to Upstart

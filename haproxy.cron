@@ -1,0 +1,3 @@
+* * * * * root bash /usr/local/bin/haproxy-marathon-bridge $(cat /etc/haproxy-marathon-bridge/marathons) > /tmp/haproxy.cfg ; /usr/local/bin/refresh-haproxy
+
+
