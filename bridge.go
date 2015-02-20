@@ -23,7 +23,7 @@ const (
         $name install_haproxy_system <marathon host:port>+
 
       Generates a new configuration file for HAProxy from the specified Marathon
-      servers, replaces the file in /etc/haproxy and restarts the service.
+      servers, replaces the file in /etc/haproxycron and restarts the service.
 
       In the second form, installs the script itself, HAProxy and a cronjob that
       once a minute pings one of the Marathon servers specified and refreshes
@@ -69,7 +69,7 @@ listen stats
 
     frontendStart = `frontend http-in
   bind :80
-  bind :443 ssl crt /etc/haproxy/site.pem`
+  bind :443 ssl crt /etc/haproxycron/site.pem`
 
     aclFormat = `  acl subdomain-%s hdr(host) -i %s.%s
   use_backend %s if subdomain-%s`
