@@ -50,6 +50,12 @@ listen stats
   mode http
   stats enable
   stats auth admin:admin
+backend artifactory
+  balance leastconn
+  option httpclose
+  option forwardfor
+  server lauras-artifactory-1 10.215.78.113:31000 check
+
 backend commit-tester
   balance leastconn
   option httpclose
@@ -156,6 +162,8 @@ listen webserver-443
 frontend http-in
   bind :80
   bind :443 ssl crt /etc/haproxy/site.pem
+  acl subdomain-lauras-artifactory hdr(host) -i artifactory.laurasjourney.nl
+  use_backend artifactory if subdomain-lauras-artifactory
   acl subdomain-lauras-commit-tester hdr(host) -i commit-tester.laurasjourney.nl
   use_backend commit-tester if subdomain-lauras-commit-tester
   acl subdomain-lauras-elk hdr(host) -i elk.laurasjourney.nl
