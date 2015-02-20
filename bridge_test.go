@@ -2,6 +2,7 @@ package main
 
 import (
   "testing"
+    "fmt"
 )
 
 const (
@@ -161,7 +162,7 @@ listen webserver-443
 
 frontend http-in
   bind :80
-  bind :443 ssl crt /etc/haproxycron/site.pem
+  bind :443 ssl crt /etc/haproxy/site.pem
   acl subdomain-lauras-artifactory hdr(host) -i artifactory.laurasjourney.nl
   use_backend artifactory if subdomain-lauras-artifactory
   acl subdomain-lauras-commit-tester hdr(host) -i commit-tester.laurasjourney.nl
