@@ -10,9 +10,9 @@ install_bridge() {
   echo "> Transferring files"
   scp -o StrictHostKeyChecking=no bridge jclouds@$SERVER:~/haproxy-marathon-bridge
   scp -o StrictHostKeyChecking=no refresh-haproxy jclouds@$SERVER:~/refresh-haproxy
-  scp -o StrictHostKeyChecking=no haproxy.cron jclouds@$SERVER:~/haproxy.cron
+  scp -o StrictHostKeyChecking=no haproxycron jclouds@$SERVER:~/haproxycron
   echo "> Moving files to correct place"
-  ssh -o StrictHostKeyChecking=no jclouds@$SERVER 'sudo mv -f ~/haproxy-marathon-bridge /usr/local/bin/haproxy-marathon-bridge; sudo mv -f ~/refresh-haproxy /usr/local/bin/refresh-haproxy; sudo mv -f ~/haproxy /etc/cron.d/haproxy; sudo chown root:root /usr/local/bin/haproxy-marathon-bridge /usr/local/bin/refresh-haproxy /etc/cron.d/haproxy'
+  ssh -o StrictHostKeyChecking=no jclouds@$SERVER 'sudo mv -f ~/haproxy-marathon-bridge /usr/local/bin/haproxy-marathon-bridge; sudo mv -f ~/refresh-haproxy /usr/local/bin/refresh-haproxy; sudo mv -f ~/haproxycron /etc/cron.d/haproxycron; sudo chown root:root /usr/local/bin/haproxy-marathon-bridge /usr/local/bin/refresh-haproxy /etc/cron.d/haproxycron'
   echo "> DONE on $SERVER"
 }
 
