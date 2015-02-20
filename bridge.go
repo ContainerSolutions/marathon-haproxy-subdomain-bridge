@@ -121,8 +121,6 @@ func main() {
     fmt.Println(header)
 
     scanner := bufio.NewScanner(resp.Body)
-    // Skip first empty line
-    scanner.Scan()
     var acls []Acl
     for scanner.Scan() {
         fields := strings.Split(scanner.Text(), "\t")
