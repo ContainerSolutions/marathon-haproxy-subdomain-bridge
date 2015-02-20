@@ -184,15 +184,14 @@ frontend http-in
 
 type StubFetcher struct { }
 
-func (fetcher StubFetcher) FetchTasks(hostport string) ([]byte, error) {
+func (f StubFetcher) FetchTasks(hostport string) ([]byte, error) {
     return []byte(tasks), nil
 }
 
-var stubFetcher StubFetcher
-
 func TestHaProxyConfig(t *testing.T) {
+    fetcher := StubFetcher{}
 
-    config := generateHaProxyConfig(stubFetcher, "10.23.45.56")
+    config := generateHaProxyConfig(fetcher, "10.23.45.56")
 
     if config != expected {
         t.Fatal("Generated HaProxy config is not as expected!")

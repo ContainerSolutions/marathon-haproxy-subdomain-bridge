@@ -91,11 +91,15 @@ listen stats
 
 )
 
-type MarathonTasksFetcher interface {
+type TasksFetcher interface {
     FetchTasks(hostport string) ([]byte, error)
 }
 
-func FetchTasks(hostport string) ([]byte, error) {
+type MarathonTaskFetcher struct {
+
+}
+
+func (f MarathonTaskFetcher) FetchTasks(hostport string) ([]byte, error) {
     client := http.Client{}
     client.Timeout = time.Duration(60 * time.Second)
 
@@ -122,8 +126,6 @@ type Acl struct {
     Port string
 }
 
-var fetcher MarathonTasksFetcher
-
 func main() {
     help := flag.Bool("help", false, help_text)
     flag.Parse()
@@ -136,12 +138,14 @@ func main() {
         hostport = os.Args[1]
     }
 
+    fetcher := MarathonTaskFetcher{}
+
     config := generateHaProxyConfig(fetcher, hostport)
 
     fmt.Println(config)
 }
 
-func generateHaProxyConfig(fetcher MarathonTasksFetcher, hostport string) string {
+func generateHaProxyConfig(fetcher TasksFetcher, hostport string) string {
     var config = header
 
     contents, err := fetcher.FetchTasks(hostport)
