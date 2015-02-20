@@ -8,6 +8,8 @@ import (
     "time"
     "bufio"
     "strings"
+    "io/ioutil"
+    "bytes"
 )
 
 const (
@@ -89,10 +91,38 @@ listen stats
 
 )
 
+type MarathonTasksFetcher interface {
+    FetchTasks(hostport string) ([]byte, error)
+}
+
+func FetchTasks(hostport string) ([]byte, error) {
+    client := http.Client{}
+    client.Timeout = time.Duration(60 * time.Second)
+
+    req, err := http.NewRequest("GET", "http://" + hostport + "/v2/tasks", nil)
+    checkerr(err)
+
+    req.Header.Add("Accept",  "text/plain")
+    resp, err := client.Do(req)
+    checkerr(err)
+
+    defer resp.Body.Close()
+
+    contents, err := ioutil.ReadAll(resp.Body)
+
+    if err != nil {
+        return nil, err
+    }
+
+    return contents, nil
+}
+
 type Acl struct {
     App string
     Port string
 }
+
+var fetcher MarathonTasksFetcher
 
 func main() {
     help := flag.Bool("help", false, help_text)
@@ -106,21 +136,18 @@ func main() {
         hostport = os.Args[1]
     }
 
-    client := http.Client{}
-    client.Timeout = time.Duration(60 * time.Second)
+    config := generateHaProxyConfig(fetcher, hostport)
 
-    req, err := http.NewRequest("GET", "http://" + hostport + "/v2/tasks", nil)
+    fmt.Println(config)
+}
+
+func generateHaProxyConfig(fetcher MarathonTasksFetcher, hostport string) string {
+    var config = header
+
+    contents, err := fetcher.FetchTasks(hostport)
     checkerr(err)
 
-    req.Header.Add("Accept",  "text/plain")
-    resp, err := client.Do(req)
-    checkerr(err)
-
-    defer resp.Body.Close()
-
-    fmt.Println(header)
-
-    scanner := bufio.NewScanner(resp.Body)
+    scanner := bufio.NewScanner(bytes.NewReader(contents))
     var acls []Acl
     for scanner.Scan() {
         fields := strings.Split(scanner.Text(), "\t")
@@ -129,49 +156,56 @@ func main() {
         acls = append(acls, acl)
 
         if acl.Port == "80" {
-            printBackend(fields[2:], acl)
+            config = config + generateBackend(fields[2:], acl)
         } else {
-            printListen(fields[2:], acl)
+            config = config +  generateListen(fields[2:], acl)
         }
 
-        fmt.Println()
+        config = config + "\n"
     }
 
-    printFrontend(acls)
+    return config + generateFrontend(acls)
 }
 
-func printFrontend(acls []Acl) {
-    fmt.Printf(frontendStart + "\n")
+func generateFrontend(acls []Acl) string {
+    var config string
+
+    config = fmt.Sprintf(frontendStart + "\n")
 
     for _, acl := range acls {
         if acl.Port == "80" {
             strippedApp := strings.Replace(acl.App, "lauras-", "", -1)
-            fmt.Printf(aclFormat + "\n", acl.App, strippedApp, domain, strippedApp, acl.App)
+            config = config + fmt.Sprintf(aclFormat + "\n", acl.App, strippedApp, domain, strippedApp, acl.App)
         }
     }
 
-    fmt.Printf(frontendEnd + "\n", defaultBackend)
+    return config + fmt.Sprintf(frontendEnd + "\n", defaultBackend)
 }
 
-func printListen(servers []string, acl Acl) {
-    fmt.Printf(listen + "\n", acl.App, acl.Port, acl.Port)
+func generateListen(servers []string, acl Acl) string {
+    var config string
 
-	printServers(servers, acl)
+    config = fmt.Sprintf(listen + "\n", acl.App, acl.Port, acl.Port)
+
+	return config + generateServers(servers, acl)
 }
 
-func printBackend(servers []string, acl Acl) {
+func generateBackend(servers []string, acl Acl) string {
     strippedapp := strings.Replace(acl.App, "lauras-", "", -1)
-    fmt.Printf(backend + "\n", strippedapp)
 
-	printServers(servers, acl)
+    config := fmt.Sprintf(backend + "\n", strippedapp)
+
+	return config + generateServers(servers, acl)
 }
 
-func printServers(servers []string, acl Acl) {
+func generateServers(servers []string, acl Acl) string {
+    var config string
 	for index, servername := range servers {
 		if servername != "" {
-			fmt.Printf(server + "\n", acl.App, index + 1, servername)
+			config = config + fmt.Sprintf(server + "\n", acl.App, index + 1, servername)
 		}
 	}
+    return config
 }
 
 func checkerr(err error) {
