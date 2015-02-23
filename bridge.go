@@ -47,6 +47,7 @@ const (
   daemon
   log 127.0.0.1 local0
   log 127.0.0.1 local1 notice
+  log /var/lib/haproxy/dev/log local0
   maxconn 4096
   tune.ssl.default-dh-param 2048
 
