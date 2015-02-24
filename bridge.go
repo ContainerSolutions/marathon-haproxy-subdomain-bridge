@@ -72,7 +72,7 @@ listen stats
   bind :80
   bind :443 ssl crt /etc/haproxy/site.pem`
 
-    aclFormat = `  acl subdomain-%s hdr(host) -i %s.%s
+    aclFormat = `  acl subdomain-%s hdr_dom(host) -i %s.%s
   use_backend %s if subdomain-%s`
 
     frontendEnd = `  default_backend %s`
