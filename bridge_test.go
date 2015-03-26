@@ -184,12 +184,12 @@ func (f StubFetcher) FetchTasks(hostport string) ([]byte, error) {
 
 func TestHaProxyConfig(t *testing.T) {
 	fetcher := StubFetcher{}
-
-	config := generateHaProxyConfig(fetcher, "10.23.45.56")
-
+	var marathon = "10.23.45.56"
+	var domain = "laurasjourney.nl"
+	config := generateHaProxyConfig(fetcher, &marathon, &domain)
 	if config != expected {
-    // fmt.Printf(config)
-    // fmt.Printf(expected)
+		// fmt.Printf(config)
+		// fmt.Printf(expected)
 		t.Fatal("Generated HaProxy config is not as expected!")
 	}
 

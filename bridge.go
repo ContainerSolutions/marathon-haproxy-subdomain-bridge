@@ -13,13 +13,10 @@ import (
 )
 
 const (
-	domain = "laurasjourney.nl"
-
 	defaultBackend = "journey"
 
 	help_text = `
-     USAGE: $name <marathon host:port>+
-        $name install_haproxy_system <marathon host:port>+
+      USAGE: $name -domain=<example.com> -marathon=<marathon host:port>
 
       Generates a new configuration file for HAProxy from the specified Marathon
       servers, replaces the file in /etc/haproxy and restarts the service.
@@ -91,17 +88,17 @@ listen stats
 )
 
 type TasksFetcher interface {
-	FetchTasks(hostport string) ([]byte, error)
+	FetchTasks(marathon string) ([]byte, error)
 }
 
 type MarathonTaskFetcher struct {
 }
 
-func (f MarathonTaskFetcher) FetchTasks(hostport string) ([]byte, error) {
+func (f MarathonTaskFetcher) FetchTasks(marathon string) ([]byte, error) {
 	client := http.Client{}
 	client.Timeout = time.Duration(60 * time.Second)
 
-	req, err := http.NewRequest("GET", "http://"+hostport+"/v2/tasks", nil)
+	req, err := http.NewRequest("GET", "http://"+marathon+"/v2/tasks", nil)
 	checkerr(err)
 
 	req.Header.Add("Accept", "text/plain")
@@ -125,28 +122,25 @@ type Acl struct {
 }
 
 func main() {
-	help := flag.Bool("help", false, help_text)
+	var domain = flag.String("domain", "", "Domain")
+	var marathon = flag.String("marathon", "", "Marathon")
+	var help = flag.Bool("help", false, help_text)
 	flag.Parse()
 
-	var hostport string
-	if *help || len(os.Args) <= 1 {
+	if *domain == "" || *marathon == "" || *help {
 		fmt.Println(help_text)
 		os.Exit(0)
-	} else {
-		hostport = os.Args[1]
 	}
 
 	fetcher := MarathonTaskFetcher{}
-
-	config := generateHaProxyConfig(fetcher, hostport)
-
+	config := generateHaProxyConfig(fetcher, marathon, domain)
 	fmt.Println(config)
 }
 
-func generateHaProxyConfig(fetcher TasksFetcher, hostport string) string {
+func generateHaProxyConfig(fetcher TasksFetcher, marathon *string, domain *string) string {
 	var config = header
 
-	contents, err := fetcher.FetchTasks(hostport)
+	contents, err := fetcher.FetchTasks(*marathon)
 	checkerr(err)
 
 	scanner := bufio.NewScanner(bytes.NewReader(contents))
@@ -166,10 +160,10 @@ func generateHaProxyConfig(fetcher TasksFetcher, hostport string) string {
 		config = config + "\n"
 	}
 
-	return config + generateFrontend(acls)
+	return config + generateFrontend(acls, *domain)
 }
 
-func generateFrontend(acls []Acl) string {
+func generateFrontend(acls []Acl, domain string) string {
 	var config string
 
 	config = fmt.Sprintf(frontendStart + "\n")
