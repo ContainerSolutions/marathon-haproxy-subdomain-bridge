@@ -27,6 +27,7 @@ webserver	443	10.16.85.111:31003	10.215.78.113:31012`
   daemon
   log 127.0.0.1 local0
   log 127.0.0.1 local1 notice
+  log /var/lib/haproxy/dev/log local0
   maxconn 4096
   tune.ssl.default-dh-param 2048
 
@@ -157,19 +158,19 @@ listen webserver-443
 frontend http-in
   bind :80
   bind :443 ssl crt /etc/haproxy/site.pem
-  acl subdomain-lauras-artifactory hdr(host) -i artifactory.laurasjourney.nl
+  acl subdomain-lauras-artifactory hdr_dom(host) -i artifactory.laurasjourney.nl
   use_backend artifactory if subdomain-lauras-artifactory
-  acl subdomain-lauras-commit-tester hdr(host) -i commit-tester.laurasjourney.nl
+  acl subdomain-lauras-commit-tester hdr_dom(host) -i commit-tester.laurasjourney.nl
   use_backend commit-tester if subdomain-lauras-commit-tester
-  acl subdomain-lauras-elk hdr(host) -i elk.laurasjourney.nl
+  acl subdomain-lauras-elk hdr_dom(host) -i elk.laurasjourney.nl
   use_backend elk if subdomain-lauras-elk
-  acl subdomain-lauras-jenkins hdr(host) -i jenkins.laurasjourney.nl
+  acl subdomain-lauras-jenkins hdr_dom(host) -i jenkins.laurasjourney.nl
   use_backend jenkins if subdomain-lauras-jenkins
-  acl subdomain-lauras-journey hdr(host) -i journey.laurasjourney.nl
+  acl subdomain-lauras-journey hdr_dom(host) -i journey.laurasjourney.nl
   use_backend journey if subdomain-lauras-journey
-  acl subdomain-lauras-simulator hdr(host) -i simulator.laurasjourney.nl
+  acl subdomain-lauras-simulator hdr_dom(host) -i simulator.laurasjourney.nl
   use_backend simulator if subdomain-lauras-simulator
-  acl subdomain-webserver hdr(host) -i webserver.laurasjourney.nl
+  acl subdomain-webserver hdr_dom(host) -i webserver.laurasjourney.nl
   use_backend webserver if subdomain-webserver
   default_backend journey
 `
@@ -187,6 +188,8 @@ func TestHaProxyConfig(t *testing.T) {
 	config := generateHaProxyConfig(fetcher, "10.23.45.56")
 
 	if config != expected {
+    // fmt.Printf(config)
+    // fmt.Printf(expected)
 		t.Fatal("Generated HaProxy config is not as expected!")
 	}
 
