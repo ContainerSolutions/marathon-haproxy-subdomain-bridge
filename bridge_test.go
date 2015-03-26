@@ -1,15 +1,12 @@
 package main
 
 import (
-  "testing"
-    "fmt"
+	"testing"
+	// "fmt"
 )
 
 const (
-
-    tasks =
-
-`lauras-artifactory	80	10.215.78.113:31000
+	tasks = `lauras-artifactory	80	10.215.78.113:31000
 lauras-commit-tester	80	10.224.225.144:31004
 lauras-elk	80	10.16.85.111:31006
 lauras-elk	5000	10.16.85.111:31007
@@ -26,10 +23,7 @@ lauras-simulator	80	10.224.225.144:31006
 webserver	80	10.16.85.111:31002	10.215.78.113:31010
 webserver	443	10.16.85.111:31003	10.215.78.113:31012`
 
-    expected =
-
-
-    `global
+	expected = `global
   daemon
   log 127.0.0.1 local0
   log 127.0.0.1 local1 notice
@@ -179,24 +173,21 @@ frontend http-in
   use_backend webserver if subdomain-webserver
   default_backend journey
 `
-
 )
 
-
-type StubFetcher struct { }
+type StubFetcher struct{}
 
 func (f StubFetcher) FetchTasks(hostport string) ([]byte, error) {
-    return []byte(tasks), nil
+	return []byte(tasks), nil
 }
 
 func TestHaProxyConfig(t *testing.T) {
-    fetcher := StubFetcher{}
+	fetcher := StubFetcher{}
 
-    config := generateHaProxyConfig(fetcher, "10.23.45.56")
+	config := generateHaProxyConfig(fetcher, "10.23.45.56")
 
-    if config != expected {
-        t.Fatal("Generated HaProxy config is not as expected!")
-    }
+	if config != expected {
+		t.Fatal("Generated HaProxy config is not as expected!")
+	}
 
 }
-
