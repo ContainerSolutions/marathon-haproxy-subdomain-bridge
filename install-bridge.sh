@@ -20,7 +20,7 @@ echo "> Building bridge.go"
 go build bridge.go
 echo "> DONE"
 
-SERVERS="108.59.83.246 130.211.122.50 146.148.95.197 146.148.67.239 146.148.45.43"
+SERVERS="108.59.83.246 146.148.95.197 146.148.67.239 146.148.45.43 104.154.94.6"
 for SERVER in $SERVERS
 do
   install_bridge $SERVER
