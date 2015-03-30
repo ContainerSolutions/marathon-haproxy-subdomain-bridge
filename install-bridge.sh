@@ -4,6 +4,9 @@
 # Installs the Marathon HaProxy Subdomain Bridge on all nodes in the Mesos cluster
 #
 
+DOMAIN="example.com"
+SERVERS="108.59.83.246 146.148.95.197 146.148.67.239 146.148.45.43 104.154.94.6"
+
 install_bridge() {
   SERVER=$1
   echo "> Installing bridge on $SERVER"
@@ -18,12 +21,12 @@ install_bridge() {
 
 echo "> Building bridge.go"
 go build bridge.go
-echo "> DONE"
+echo "> Updating cronjob"
+sed -i '' "s/<domain>/$DOMAIN/" haproxycron
 
-SERVERS="108.59.83.246 146.148.95.197 146.148.67.239 146.148.45.43 104.154.94.6"
 for SERVER in $SERVERS
 do
-  install_bridge $SERVER
+  install_bridge $SERVER $DOMAIN
 done
 
 
