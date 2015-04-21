@@ -66,7 +66,8 @@ listen stats
 
 	frontendStart = `frontend http-in
   bind :80
-  bind :443 ssl crt /etc/haproxy/site.pem`
+  bind :443 ssl crt /etc/haproxy/site.pem
+  redirect scheme https code 301 if !{ ssl_fc }`
 
 	aclFormat = `  acl subdomain-%s hdr_dom(host) -i %s.%s
   use_backend %s if subdomain-%s`
