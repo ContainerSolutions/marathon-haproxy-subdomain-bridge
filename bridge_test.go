@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	// "fmt"
 )
 
 const (
@@ -158,6 +157,7 @@ listen webserver-443
 frontend http-in
   bind :80
   bind :443 ssl crt /etc/haproxy/site.pem
+  redirect scheme https code 301 if !{ ssl_fc }
   acl subdomain-lauras-artifactory hdr_dom(host) -i artifactory.laurasjourney.nl
   use_backend artifactory if subdomain-lauras-artifactory
   acl subdomain-lauras-commit-tester hdr_dom(host) -i commit-tester.laurasjourney.nl
