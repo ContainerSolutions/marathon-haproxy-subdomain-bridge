@@ -180,6 +180,7 @@ func writeConfigFile(config string, configFile string) {
 		fmt.Println("Could not write HaProxy configuration file")
 		fmt.Println(n, err)
 	}
+	// TODO: Close file
 }
 
 func reload(binary string, pidFile string, configFile string) error {
