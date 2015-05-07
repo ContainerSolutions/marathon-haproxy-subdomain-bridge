@@ -10,13 +10,14 @@ import (
 	"os"
 	"strings"
 	"time"
-)
+	"log"
+	"os/exec")
 
 const (
 	defaultBackend = "journey"
 
 	help_text = `
-      USAGE: $name -domain=<example.com> -marathon=<marathon host:port>
+      USAGE: bridge -domain=<example.com> -marathon=<marathon host:port>
 
       Generates a new configuration file for HAProxy from the specified Marathon
       servers, replaces the file in /etc/haproxy and restarts the service.
@@ -126,6 +127,11 @@ func main() {
 	var domain = flag.String("domain", "", "Domain")
 	var marathon = flag.String("marathon", "", "Marathon")
 	var help = flag.Bool("help", false, help_text)
+	var rest = flag.Bool("server", true, "Run as server");
+	var pidFile = flag.String("pidfile", "/var/run/haproxy.pid", "Path to PID file")
+	var configFile = flag.String("config", "/etc/haproxy/haproxy.cfg", "Path to config file")
+	var binary = flag.String("haproxy", "/usr/local/bin/haproxy", "Path to HaProxy")
+
 	flag.Parse()
 
 	if *domain == "" || *marathon == "" || *help {
@@ -134,8 +140,65 @@ func main() {
 	}
 
 	fetcher := MarathonTaskFetcher{}
-	config := generateHaProxyConfig(fetcher, marathon, domain)
-	fmt.Println(config)
+
+	if *rest {
+		startServer(fetcher, marathon, domain, pidFile, configFile, binary)
+	} else {
+		config := generateHaProxyConfig(fetcher, marathon, domain)
+		fmt.Println(config)
+		os.Exit(0);
+	}
+}
+
+func startServer(fetcher MarathonTaskFetcher,
+				 marathon *string,
+				 domain *string,
+				 pidFile *string,
+                 configFile *string,
+				 binary *string) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		generateHaProxyConfig(fetcher, marathon, domain)
+		reload(*binary, *pidFile, *configFile)
+		fmt.Fprintf(w, "HaProxy reloaded!")
+	})
+	// TODO: Extract port
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func reload(binary string, pidFile string, configFile string) error {
+	pid, err := ioutil.ReadFile(pidFile)
+	if err != nil {
+		return err
+	}
+
+	/* 	Setup all the command line parameters so we get an executable similar to
+        /usr/local/bin/haproxy -f resources/haproxy_new.cfg -p resources/haproxy-private.pid -sf 1234
+    */
+	arg0 := "-f"
+	arg1 := configFile
+	arg2 := "-p"
+	arg3 := pidFile
+	arg4 := "-D"
+	arg5 := "-sf"
+	arg6 := strings.Trim(string(pid),"\n")
+	var cmd *exec.Cmd
+
+	// If this is the first run, the PID value will be empty, otherwise it will be > 0
+	if len(arg6) > 0 {
+		cmd = exec.Command(binary, arg0, arg1 ,arg2, arg3, arg4, arg5, arg6)
+	} else {
+		cmd = exec.Command(binary, arg0, arg1 ,arg2, arg3, arg4)
+	}
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmdErr := cmd.Run()
+	if cmdErr != nil {
+		fmt.Println(cmdErr.Error())
+		return cmdErr
+	}
+	// TODO: Replace with info?
+	log.Print("HaProxy Reload: " + out.String() + string(pid))
+	return nil
 }
 
 func generateHaProxyConfig(fetcher TasksFetcher, marathon *string, domain *string) string {
