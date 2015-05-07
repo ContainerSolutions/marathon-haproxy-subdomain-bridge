@@ -11,13 +11,14 @@ import (
 	"strings"
 	"time"
 	"log"
-	"os/exec")
+	"os/exec"
+	"io")
 
 const (
 	defaultBackend = "journey"
 
 	help_text = `
-      USAGE: bridge -domain=<example.com> -marathon=<marathon host:port>
+      USAGE: bridge -domain=<example.com> -marathon=<marathon host:port> -server=<true|false>
 
       Generates a new configuration file for HAProxy from the specified Marathon
       servers, replaces the file in /etc/haproxy and restarts the service.
@@ -128,6 +129,7 @@ func main() {
 	var marathon = flag.String("marathon", "", "Marathon")
 	var help = flag.Bool("help", false, help_text)
 	var rest = flag.Bool("server", true, "Run as server");
+	var port = flag.String("port", "8080", "Server port");
 	var pidFile = flag.String("pidfile", "/var/run/haproxy.pid", "Path to PID file")
 	var configFile = flag.String("config", "/etc/haproxy/haproxy.cfg", "Path to config file")
 	var binary = flag.String("haproxy", "/usr/local/bin/haproxy", "Path to HaProxy")
@@ -142,7 +144,8 @@ func main() {
 	fetcher := MarathonTaskFetcher{}
 
 	if *rest {
-		startServer(fetcher, marathon, domain, pidFile, configFile, binary)
+		fmt.Println("Starting Marathon HaProxy bridge server on port " + *port)
+		startServer(fetcher, marathon, domain, pidFile, configFile, binary, port)
 	} else {
 		config := generateHaProxyConfig(fetcher, marathon, domain)
 		fmt.Println(config)
@@ -155,19 +158,34 @@ func startServer(fetcher MarathonTaskFetcher,
 				 domain *string,
 				 pidFile *string,
                  configFile *string,
-				 binary *string) {
+				 binary *string,
+				 port *string) {
+	// TODO: Check if request originates from Marathon host. If not, reject
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		generateHaProxyConfig(fetcher, marathon, domain)
+		config := generateHaProxyConfig(fetcher, marathon, domain)
+		writeConfigFile(config, *configFile)
 		reload(*binary, *pidFile, *configFile)
-		fmt.Fprintf(w, "HaProxy reloaded!")
 	})
-	// TODO: Extract port
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":" + *port, nil))
+}
+
+func writeConfigFile(config string, configFile string) {
+	file, err := os.Create(configFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	n, err := io.WriteString(file, config)
+	if err != nil {
+		fmt.Println("Could not write HaProxy configuration file")
+		fmt.Println(n, err)
+	}
 }
 
 func reload(binary string, pidFile string, configFile string) error {
 	pid, err := ioutil.ReadFile(pidFile)
 	if err != nil {
+		fmt.Print("Could not read pid file", err)
 		return err
 	}
 
