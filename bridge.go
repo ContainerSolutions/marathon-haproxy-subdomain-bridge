@@ -162,6 +162,8 @@ func startServer(fetcher MarathonTaskFetcher,
 				 port *string) {
 	// TODO: Check if request originates from Marathon host. If not, reject
 
+	// TODO: Currently Marathon sends 6 updates. Make sure HaProxy is reloaded only once
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		config := generateHaProxyConfig(fetcher, marathon, domain)
 		writeConfigFile(config, *configFile)
